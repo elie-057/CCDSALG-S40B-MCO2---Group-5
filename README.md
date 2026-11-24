@@ -20,10 +20,10 @@ Expected Output:
 
 3. DFS & BFS Traversal Results:
    - States the resulting paths and node counts for each target objective:
-     > Most Treasure nodes
-     > Most Mystery nodes
-     > Safest route (fewest Enemy nodes)
-     > Most Dangerous route (most Enemy nodes)
+     Most Treasure nodes
+     Most Mystery nodes
+     Safest route (fewest Enemy nodes)
+     Most Dangerous route (most Enemy nodes)
 
 4. Comparative Runtime Summary:
    - Displays side-by-side execution iterations comparing DFS and BFS across the generated map and traversal queries.
