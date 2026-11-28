@@ -10,89 +10,104 @@ char map[ROWS][COLS];
 int edges[TOTAL][TOTAL];
 int hasNode[ROWS][COLS];
 
+// Compares distance of both columns
+int columnDistance(int cA, int cB) {
+    if (cA > cB)
+		return cA - cB;
+	
+	return cB - cA;
+}
+
 // Generate random number from min to max
-int randomNumber(int min, int max) 
-{
+int randomNumber(int min, int max) {
     return min + rand() % (max - min + 1);
 }
 
 // Check if a column already has a node
-int columnUsed(int row, int col) 
-{
+int columnUsed(int row, int col) {
     return hasNode[row][col];
 }
 
 // Generate the number of nodes per row
 void generatePositions() 
 {
-    for (int r = 0; r < ROWS; r++) 
+    int c, r, col, allowed, next, ctr, tries, placed, found;
+	
+	for (r = 0; r < ROWS; r++) 
 	{
-
-        int count;
-
-        if (r == 0 || r == ROWS - 1) 
-            count = randomNumber(3, 5);
-            
-        else
-            count = randomNumber(1, COLS);
-
         while (1) 
 		{
-            int placed = 0;
-
-            for (int c = 0; c < COLS; c++) 
-                hasNode[r][c] = 0;
+			if (r == 0 || r == ROWS - 1) 
+            	ctr = randomNumber(3, 5);
+        	
+			else 
+            	ctr = randomNumber(1, COLS);
             
+            allowed = 0;
+            tries = 0;
 
-            while (placed < count) 
+			while (tries < 200)
 			{
-                int col = randomNumber(0, COLS - 1);
-
-                if (!columnUsed(r, col)) 
+				placed = 0;
+				
+				for (c = 0; c < COLS; c++) 
+                	hasNode[r][c] = 0;
+            	
+            	while (placed < ctr) 
 				{
-                    hasNode[r][col] = 1;
-                    placed++;
-                }
-            }
-
+	                col = randomNumber(0, COLS - 1);
+	
+	                if (!columnUsed(r, col)) 
+					{
+	                    hasNode[r][col] = 1;
+	                    placed++;
+	                }
+            	}
+            	
             // Check that every node has a possible
             // connection to the next row.
-            int valid = 1;
+            allowed = 1;
 
             if (r > 0) 
 			{
-                for (int c = 0; c < COLS; c++) 
+                for (c = 0; c < COLS; c++) 
 				{
                     if (hasNode[r - 1][c]) 
 					{
-                        int found = 0;
+                        found = 0;
 
-                        for (int next = 0; next < COLS; next++) 
+                        for (next = 0; next < COLS; next++) 
 						{
-                            if (hasNode[r][next] && abs(c - next) <= 2) 
+                            if (hasNode[r][next] &&
+                                columnDistance(c, next) <= 2) 
                                 found = 1;
                         }
 
                         if (!found) 
 						{
-                            valid = 0;
+                            allowed = 0;
                             break;
                         }
                     }
                 }
             }
 
-            if (valid) 
-			{
+		        if (allowed)
+		            break;
+	                
+	        	tries++;
+        	}
+        	
+        	if (allowed)
                 break;
-            }
         }
     }
 }
 
 // Check whether a special node type is allowed
-int validType(int row, int col, char type) 
-{
+int validType(int row, int col, char type) {
+
+	int i, j;
 
     if (type == 'R' || type == 'T' || type == '$') 
 	{
@@ -100,9 +115,11 @@ int validType(int row, int col, char type)
         // Check nodes in the previous row
         if (row > 0) 
 		{
-            for (int c = 0; c < COLS; c++) 
+            for (i = 0; i < COLS; i++) 
 			{
-                if (hasNode[row - 1][c] && abs(col - c) <= 2 && map[row - 1][c] == type) 
+                if (hasNode[row - 1][i] &&
+                    columnDistance(col, i) <= 2 &&
+                    map[row - 1][i] == type) 
                     return 0;
             }
         }
@@ -110,9 +127,9 @@ int validType(int row, int col, char type)
         // Check the last row when generating row 10
         if (row == ROWS - 2 && type == 'R') 
 		{
-            for (int c = 0; c < COLS; c++) 
-			{
-                if (hasNode[ROWS - 1][c] && abs(col - c) <= 2) 
+            for (j = 0; j < COLS; j++) {
+                if (hasNode[ROWS - 1][j] &&
+                    columnDistance(col, j) <= 2) 
                     return 0;
             }
         }
@@ -122,34 +139,33 @@ int validType(int row, int col, char type)
 }
 
 // Generate random node type based on percentages
-char generateNodeType(int row, int col) 
-{
-
-    if (row == 0) 
+char generateNodeType(int row, int col) {
+    char type;
+	int attempt, chance; 
+	
+	if (row == 0) 
         return 'E';
 
     if (row == ROWS - 1) 
         return 'R';
 
-    for (int attempt = 0; attempt < 100; attempt++) 
+    for (attempt = 0; attempt < 100; attempt++) 
 	{
-
-        int chance = randomNumber(1, 100);
-        char type;
+        chance = randomNumber(1, 100);
 
         if (chance <= 40) 
             type = 'E';
-            
-        else if (chance <= 65) 
+        
+		else if (chance <= 65) 
             type = '?';
-            
-        else if (chance <= 80) 
+        
+		else if (chance <= 80) 
             type = 'T';
-            
-        else if (chance <= 95) 
+        
+		else if (chance <= 95) 
             type = 'R';
-            
-        else 
+        
+		else 
             type = '$';
 
         if (validType(row, col, type)) 
@@ -161,16 +177,17 @@ char generateNodeType(int row, int col)
 }
 
 // Generate all node types
-void generateMap() 
-{
+void generateMap() {
+	int r, c;
+	
     generatePositions();
 
-    for (int r = 0; r < ROWS; r++) 
+    for (r = 0; r < ROWS; r++) 
 	{
-        for (int c = 0; c < COLS; c++) 
+        for (c = 0; c < COLS; c++) 
 		{
 
-            if (hasNode[r][c])
+            if (hasNode[r][c]) 
                 map[r][c] = generateNodeType(r, c);
             
 			else 
@@ -180,119 +197,117 @@ void generateMap()
 }
 
 // Generate directed connections
-void generateEdges() 
-{
-	int maximumRowEdges = 2 * COLS;
-	
-    for (int r = 0; r < ROWS - 1; r++) 
-	{
-		int rowSourceCols[maximumRowEdges];
-        int rowDestCols[maximumRowEdges];
-        int rowEdgeCtr = 0;
-		
-        for (int c = 0; c < COLS; c++) 
-		{
+void generateEdges() {
+	int r, c, rowEdgeCtr, targetCtr, columnDifference, 
+	next, targets[COLS], usedTarget[COLS], maximumEdges,
+	edgeCtr, i, chosenColumn, attempts, crosses, j, 
+	rowSourceColumns[COLS * 2], rowDestColumns[COLS * 2], 
+	maximumRowEdges = COLS * 2, from, to, k;
 
+
+    for (r = 0; r < ROWS - 1; r++) 
+	{
+		rowEdgeCtr = 0;
+		
+        for (c = 0; c < COLS; c++) 
+		{
             if (hasNode[r][c]) 
 			{
-				int targetCtr = 0;
-				int targets[COLS];
+				targetCtr = 0;
 
-                for (int next = 0; next < COLS; next++) 
+                for (next = 0; next < COLS; next++) 
 				{
-
                     if (hasNode[r + 1][next]) 
 					{
-                        int difference;
-                        
-                        if (c > next)
-                        	difference = c - next;
-                        	
-                        else
-                        	difference = next - c;
 
-                        if (difference <= 2) 
-                            targets[targetCtr++] = next;
+                    	columnDifference = columnDistance(c, next);
+
+                        if (columnDifference <= 2) 
+						{
+                            targets[targetCtr] = next;
+                            targetCtr++;
+                        }
                     }
                 }
-                
-                if (targetCtr > 0)
-                {
-                	int maximumEdges;
-                	
-                	if (targetCtr > 2)
-                		maximumEdges = 2;
-                		
-                	else 
-                		maximumEdges = targetCtr;
-                		
-                	int edgeCtr = (rand() % maximumEdges) + 1;
-                	int nodeEdges = 0;
-                	int usedTarget[COLS] = {0};
-                	
-                	for (int i = 0; i < edgeCtr; i++)
-                	{
-                		int cross = 0;
-                		int tries = 0;
-                		int col = -1;
-                		
-                		do
-                		{
-                			cross = 0;
-                			col = targets[rand() % targetCtr];
-                			
-                			for (int j = 0; j < rowEdgeCtr; j++)
-                			{
-                				if ((rowDestCols[j] > col && rowSourceCols[j] < c) || (rowDestCols[j] < col && rowSourceCols[j] > c))                				
-                					cross = 1;
-							}
-							
-							tries++;
-						} while ((usedTarget[col] || cross) && tries < 15);
+
+                if (targetCtr > 0) 
+				{
+					for (k = 0; k < COLS; k++)
+						usedTarget[k] = 0;
+					
+                    if (targetCtr > 2)
+                    	maximumEdges = 2;
+                    	
+                    else
+                    	maximumEdges = targetCtr;
+                    	
+                    edgeCtr = randomNumber(1, maximumEdges);
+                    
+                    for (i = 0; i < edgeCtr; i++)
+                    {
+                    	chosenColumn = -1; 
+						attempts = 0;
+						crosses = 1;
 						
-						if (nodeEdges < COLS && !cross && !usedTarget[col] && rowEdgeCtr < maximumRowEdges)
-						{
-							int from = COLS * r + c;
-							int to = COLS * (r + 1) + col;
-							
-							usedTarget[col] = 1;
-							rowSourceCols[rowEdgeCtr] = c;
-							rowDestCols[rowEdgeCtr] = col;
-							rowEdgeCtr++;
-							nodeEdges++;
-							
-							edges[from][to] = 1;
-						}
-					}	
-				}
+						while (attempts < 20 && (crosses || chosenColumn == -1 || usedTarget[chosenColumn]))
+                        {
+                            chosenColumn = targets[rand() % targetCtr];
+                            crosses = 0;
+                            
+                            for (j = 0; j < rowEdgeCtr; j++)
+                            {
+                                if ((rowSourceColumns[j] < c &&
+                                     rowDestColumns[j] > chosenColumn) ||
+                                    (rowSourceColumns[j] > c &&
+                                     rowDestColumns[j] < chosenColumn))
+                                    crosses = 1;
+                            }
+
+                            attempts++;
+                        }
+                        
+                        if (!crosses && chosenColumn != -1 &&
+                            rowEdgeCtr < maximumRowEdges && !usedTarget[chosenColumn])
+                        {
+                            from = COLS * r + c;
+                            to = COLS * (r + 1) + chosenColumn;
+
+                            edges[from][to] = 1;
+                            usedTarget[chosenColumn] = 1;
+                            rowSourceColumns[rowEdgeCtr] = c;
+                            rowDestColumns[rowEdgeCtr] = chosenColumn;
+                            rowEdgeCtr++;
+                        }
+					}
+                }
             }
         }
     }
 }
 
 // Display the generated map
-void displayMap() 
-{ 
-    printf("\n========== GENERATED MAP ==========\n\n");
+void displayMap() {
+	int r, c;
 
+    printf("\n========== GENERATED MAP ==========\n\n");
     printf("       ");
 
-    for (int c = 0; c < COLS; c++) 
+    for (c = 0; c < COLS; c++) 
         printf("%d   ", c);
 
     printf("\n");
 
-    for (int r = 0; r < ROWS; r++) 
+    for (r = 0; r < ROWS; r++) 
 	{
         printf("Row %2d ", r);
 
-        for (int c = 0; c < COLS; c++) 
+        for (c = 0; c < COLS; c++) 
 		{
 
-            if (hasNode[r][c]) 
+            if (hasNode[r][c])
                 printf("[%c] ", map[r][c]);
-                
-            else 
+            
+			else 
                 printf(" .  ");
         }
 
@@ -308,26 +323,26 @@ void displayMap()
 }
 
 // Display adjacency list
-void displayAdjacencyList() 
-{
+void displayAdjacencyList() {
+	int r, c, from, next;
+	
     printf("\n========== ADJACENCY LIST ==========\n");
 
-    for (int r = 0; r < ROWS; r++) 
+    for (r = 0; r < ROWS; r++) 
 	{
-        for (int c = 0; c < COLS; c++) 
+        for (c = 0; c < COLS; c++) 
 		{
 
             if (hasNode[r][c]) 
 			{
-
-                int from = r * COLS + c;
+				from = r * COLS + c;
 
                 printf("\nNode %d (%c) -> ", from, map[r][c]);
 
-                for (int next = 0; next < TOTAL; next++) 
+                for (next = 0; next < TOTAL; next++) 
 				{
                     if (edges[from][next] == 1) 
-                        printf("%d ", next);
+                    	printf("%d ", next);
                 }
             }
         }
@@ -337,35 +352,46 @@ void displayAdjacencyList()
 }
 
 // Display adjacency matrix using active nodes only
-void displayAdjacencyMatrix() 
-{
-	int n = 15;
+void displayAdjacencyMatrix() {
+    int activeNodes[TOTAL];
+    int count = 0;
+    int r, c, i, j, k;
+
+    for (r = 0; r < ROWS; r++) 
+	{
+        for (c = 0; c < COLS; c++) 
+		{
+
+            if (hasNode[r][c]) 
+			{
+                activeNodes[count] = r * COLS + c;
+                count++;
+            }
+        }
+    }
 
     printf("\n========== ADJACENCY MATRIX ==========\n");
-
     printf("     ");
 
-    for (int i = 0; i < n; i++) 
-        printf("%3d ", i);
+    for (i = 0; i < count; i++) 
+        printf("%3d ", activeNodes[i]);
 
     printf("\n");
 
-    for (int j = 0; j < n; j++) 
+    for (j = 0; j < count; j++) 
 	{
+        printf("%3d  ", activeNodes[j]);
 
-        printf("%3d  ", j);
-
-        for (int k = 0; k < n; k++) 
-            printf("%3d ", edges[j][k]);
+        for (k = 0; k < count; k++) 
+            printf("%3d ", edges[activeNodes[j]][activeNodes[k]]);
 
         printf("\n");
     }
 }
 
-int main() 
-{
+int main() {
 
-    srand(time(NULL));
+    srand((unsigned int)time(NULL));
 
     generateMap();
     generateEdges();
